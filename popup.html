@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Deep Focus</title>
+<style>
+  :root {
+    --bg:        #000000;
+    --bg2:       #1c1c1e;
+    --bg3:       #2c2c2e;
+    --sep:       #38383a;
+    --text:      #ffffff;
+    --text2:     #98989e;
+    --text3:     #636366;
+    --text4:     #3a3a3c;
+    --green:     #30d158;
+    --red:       #ff453a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 320px;
+    font-family: -apple-system, 'SF Pro Text', BlinkMacSystemFont, sans-serif;
+    font-feature-settings: "kern" 1;
+    -webkit-font-smoothing: antialiased;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 400px;
+  }
+
+  /* ── Header ── */
+  .header {
+    padding: 14px 16px 12px;
+    border-bottom: 0.5px solid var(--sep);
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .logo-icon {
+    width: 26px;
+    height: 26px;
+    background: var(--bg2);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .logo-text {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    color: var(--text);
+  }
+  .tagline {
+    font-size: 10px;
+    color: var(--text3);
+    margin-left: 34px;
+    letter-spacing: 0.1px;
+  }
+  .toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .toggle-lbl {
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.2px;
+  }
+  .toggle {
+    width: 36px;
+    height: 20px;
+    background: var(--bg3);
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: background .2s;
+    flex-shrink: 0;
+  }
+  .toggle.on { background: var(--text); }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    background: var(--text2);
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: left .2s, background .2s;
+  }
+  .toggle.on::after {
+    left: 18px;
+    background: var(--bg);
+  }
+
+  /* ── Section label ── */
+  .sec-label {
+    font-size: 9px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    font-weight: 500;
+    margin-bottom: 10px;
+  }
+
+  /* ── Timer ── */
+  .timer-section {
+    padding: 16px 16px 14px;
+    border-bottom: 0.5px solid var(--sep);
+  }
+  .timer-num {
+    font-size: 44px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -2px;
+    line-height: 1;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .timer-msg {
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 14px;
+    min-height: 16px;
+    line-height: 1.4;
+  }
+  .dur-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .dur-btn {
+    background: var(--bg2);
+    border: none;
+    border-radius: 8px;
+    color: var(--text2);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 7px 0;
+    cursor: pointer;
+    text-align: center;
+    transition: all .15s;
+    font-family: inherit;
+  }
+  .dur-btn:hover { color: var(--text); background: var(--bg3); }
+  .dur-btn.sel { background: var(--text); color: var(--bg); font-weight: 600; }
+  .ctrl-row { display: flex; gap: 6px; }
+  .btn {
+    flex: 1;
+    padding: 9px;
+    border-radius: 10px;
+    border: none;
+    background: var(--bg2);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .15s;
+    font-family: inherit;
+  }
+  .btn:hover { background: var(--bg3); }
+  .btn.primary { background: var(--text); color: var(--bg); }
+  .btn.primary:hover { background: #e8e8e8; }
+  .btn.danger { color: var(--red); background: transparent; }
+  .btn.danger:hover { background: var(--bg2); }
+
+  /* ── Sites ── */
+  .sites-section {
+    padding: 14px 16px;
+    border-bottom: 0.5px solid var(--sep);
+  }
+  .sec-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .site-badge { font-size: 10px; color: var(--text3); font-weight: 500; }
+  .site-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    max-height: 108px;
+    overflow-y: auto;
+    margin-bottom: 8px;
+  }
+  .site-list::-webkit-scrollbar { width: 0; }
+  .empty-msg {
+    padding: 14px 0;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text4);
+    line-height: 1.5;
+  }
+  .site-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 10px;
+    background: var(--bg2);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .site-x {
+    background: none;
+    border: none;
+    color: var(--text4);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 2px;
+    transition: color .15s;
+    font-family: inherit;
+  }
+  .site-x:hover { color: var(--red); }
+  .add-row { display: flex; gap: 6px; }
+  .site-inp {
+    flex: 1;
+    padding: 7px 10px;
+    background: var(--bg2);
+    border: 0.5px solid transparent;
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 12px;
+    outline: none;
+    transition: border-color .15s;
+    font-family: inherit;
+  }
+  .site-inp:focus { border-color: var(--sep); }
+  .site-inp::placeholder { color: var(--text4); }
+  .add-btn-sm {
+    padding: 7px 12px;
+    background: var(--bg2);
+    border: none;
+    border-radius: 8px;
+    color: var(--text2);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+    font-family: inherit;
+  }
+  .add-btn-sm:hover { background: var(--bg3); color: var(--text); }
+
+  /* ── Presets ── */
+  .presets-section {
+    padding: 14px 16px;
+    border-bottom: 0.5px solid var(--sep);
+  }
+  .preset-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+  }
+  .preset-btn {
+    padding: 7px 5px;
+    background: var(--bg2);
+    border: none;
+    border-radius: 8px;
+    color: var(--text2);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .15s;
+    text-align: center;
+    line-height: 1.4;
+    font-family: inherit;
+  }
+  .preset-btn:hover { background: var(--bg3); color: var(--text); }
+  .preset-btn.added { border-left: 2px solid var(--green); color: var(--green); }
+  .preset-btn.nuclear { color: var(--text3); }
+  .preset-btn.nuclear:hover { color: var(--red); background: var(--bg3); }
+
+  /* ── Status bar ── */
+  .status-bar {
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--text4);
+    flex-shrink: 0;
+  }
+  .dot.on { background: var(--green); }
+  .status-msg { font-size: 11px; color: var(--text4); line-height: 1.4; }
+  .status-msg.on { color: var(--text2); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="logo">
+      <div class="logo-icon">
+        <!-- pixel clock -->
+        <svg width="14" height="14" viewBox="0 0 16 16" shape-rendering="crispEdges">
+          <rect x="3" y="1" width="10" height="1" fill="#f2f2f2"/>
+          <rect x="1" y="3" width="1" height="10" fill="#f2f2f2"/>
+          <rect x="14" y="3" width="1" height="10" fill="#f2f2f2"/>
+          <rect x="3" y="14" width="10" height="1" fill="#f2f2f2"/>
+          <rect x="2" y="2" width="1" height="1" fill="#f2f2f2"/>
+          <rect x="13" y="2" width="1" height="1" fill="#f2f2f2"/>
+          <rect x="2" y="13" width="1" height="1" fill="#f2f2f2"/>
+          <rect x="13" y="13" width="1" height="1" fill="#f2f2f2"/>
+          <rect x="8" y="4" width="1" height="4" fill="#f2f2f2"/>
+          <rect x="8" y="8" width="3" height="1" fill="#f2f2f2"/>
+          <rect x="8" y="8" width="1" height="1" fill="#f2f2f2"/>
+        </svg>
+      </div>
+      <span class="logo-text">Deep Focus</span>
+    </div>
+    <div class="toggle-wrap">
+      <span class="toggle-lbl" id="tlbl">idle</span>
+      <div class="toggle" id="tog"></div>
+    </div>
+  </div>
+  <div class="tagline" id="htagline">Attention is the only currency that matters.</div>
+</div>
+
+<div class="timer-section">
+  <div class="sec-label">focus session</div>
+  <div class="timer-num" id="tnum">25:00</div>
+  <div class="timer-msg" id="tmsg">Set a duration. Disappear. Return with something built.</div>
+  <div class="dur-grid">
+    <button class="dur-btn" data-min="15">15 min</button>
+    <button class="dur-btn sel" data-min="25">25 min</button>
+    <button class="dur-btn" data-min="45">45 min</button>
+    <button class="dur-btn" data-min="90">90 min</button>
+  </div>
+  <div class="ctrl-row">
+    <button class="btn primary" id="startbtn">Begin</button>
+    <button class="btn danger" id="resetbtn" style="display:none">Reset</button>
+  </div>
+</div>
+
+<div class="sites-section">
+  <div class="sec-header">
+    <div class="sec-label" style="margin:0">blocked sites</div>
+    <span class="site-badge" id="scnt">0 sites</span>
+  </div>
+  <div class="site-list" id="slist">
+    <div class="empty-msg">No sites added.<br>Use presets or add manually.</div>
+  </div>
+  <div class="add-row">
+    <input type="text" class="site-inp" id="sinp" placeholder="e.g. twitter.com">
+    <button class="add-btn-sm" id="addbtn">Add</button>
+  </div>
+</div>
+
+<div class="presets-section">
+  <div class="sec-label" style="margin-bottom:10px">quick presets</div>
+  <div class="preset-grid">
+    <button class="preset-btn" data-sites="twitter.com,x.com,instagram.com,facebook.com,threads.net,bluesky.app">Social</button>
+    <button class="preset-btn" data-sites="youtube.com,netflix.com,twitch.tv,disneyplus.com,primevideo.com,hulu.com">Streaming</button>
+    <button class="preset-btn" data-sites="reddit.com,9gag.com,quora.com,lemmy.world">Forums</button>
+    <button class="preset-btn" data-sites="tiktok.com,snapchat.com,pinterest.com">Short Video</button>
+    <button class="preset-btn" data-sites="amazon.com,ebay.com,aliexpress.com,etsy.com,temu.com">Shopping</button>
+    <button class="preset-btn" data-sites="chess.com,lichess.org,steampowered.com,epicgames.com,miniclip.com">Gaming</button>
+    <button class="preset-btn" data-sites="open.spotify.com,soundcloud.com,deezer.com">Music</button>
+    <button class="preset-btn" data-sites="nytimes.com,bbc.com,cnn.com,theguardian.com,bloomberg.com,techcrunch.com">News</button>
+    <button class="preset-btn nuclear" data-sites="twitter.com,x.com,instagram.com,facebook.com,tiktok.com,snapchat.com,reddit.com,youtube.com,netflix.com,twitch.tv,amazon.com,9gag.com,pinterest.com,chess.com,nytimes.com,bbc.com,cnn.com,linkedin.com,threads.net">Nuclear</button>
+  </div>
+</div>
+
+<div class="status-bar">
+  <div class="dot" id="sdot"></div>
+  <span class="status-msg" id="smsg">Idle. Nothing is blocked. Nothing is protected.</span>
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>

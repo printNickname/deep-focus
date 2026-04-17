@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Focus Mode Active</title>
+<style>
+  :root {
+    --bg:    #000000;
+    --bg2:   #1c1c1e;
+    --sep:   #38383a;
+    --text:  #ffffff;
+    --text2: #98989e;
+    --text3: #636366;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'SF Pro Text', BlinkMacSystemFont, sans-serif;
+    font-feature-settings: "kern" 1;
+    -webkit-font-smoothing: antialiased;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    flex-direction: column;
+  }
+  .icon {
+    width: 56px;
+    height: 56px;
+    background: var(--bg2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 28px;
+  }
+  .site-label {
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.3px;
+    margin-bottom: 10px;
+    text-transform: lowercase;
+  }
+  .title {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    margin-bottom: 10px;
+  }
+  .subtitle {
+    font-size: 14px;
+    color: var(--text2);
+    text-align: center;
+    line-height: 1.6;
+    max-width: 280px;
+    margin-bottom: 36px;
+  }
+  .quote {
+    font-size: 13px;
+    color: var(--text3);
+    max-width: 260px;
+    text-align: center;
+    line-height: 1.7;
+    font-style: italic;
+    margin-bottom: 36px;
+  }
+  .back {
+    padding: 10px 24px;
+    background: var(--text);
+    border: none;
+    border-radius: 20px;
+    color: var(--bg);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s;
+    font-family: inherit;
+    letter-spacing: -0.1px;
+  }
+  .back:hover { background: #e8e8e8; }
+</style>
+</head>
+<body>
+
+<div class="icon">
+  <!-- pixel no/block icon -->
+  <svg width="28" height="28" viewBox="0 0 16 16" shape-rendering="crispEdges">
+    <rect x="4" y="1" width="8" height="1" fill="#636366"/>
+    <rect x="2" y="2" width="2" height="1" fill="#636366"/>
+    <rect x="12" y="2" width="2" height="1" fill="#636366"/>
+    <rect x="1" y="4" width="1" height="8" fill="#636366"/>
+    <rect x="14" y="4" width="1" height="8" fill="#636366"/>
+    <rect x="2" y="12" width="2" height="1" fill="#636366"/>
+    <rect x="12" y="12" width="2" height="1" fill="#636366"/>
+    <rect x="4" y="13" width="8" height="1" fill="#636366"/>
+    <!-- diagonal slash -->
+    <rect x="3"  y="3"  width="1" height="1" fill="#f2f2f2"/>
+    <rect x="4"  y="4"  width="1" height="1" fill="#f2f2f2"/>
+    <rect x="5"  y="5"  width="1" height="1" fill="#f2f2f2"/>
+    <rect x="6"  y="6"  width="1" height="1" fill="#f2f2f2"/>
+    <rect x="7"  y="7"  width="1" height="1" fill="#f2f2f2"/>
+    <rect x="8"  y="8"  width="1" height="1" fill="#f2f2f2"/>
+    <rect x="9"  y="9"  width="1" height="1" fill="#f2f2f2"/>
+    <rect x="10" y="10" width="1" height="1" fill="#f2f2f2"/>
+    <rect x="11" y="11" width="1" height="1" fill="#f2f2f2"/>
+    <rect x="12" y="12" width="1" height="1" fill="#f2f2f2"/>
+  </svg>
+</div>
+
+<div class="site-label" id="site-name"></div>
+<div class="title">You're in Focus Mode</div>
+<div class="subtitle">This site is blocked. Come back when you're done.</div>
+<p class="quote" id="rand-quote"></p>
+<button class="back" onclick="history.back()">← Return to work</button>
+
+<script>
+const quotes = [
+  "What you resist, persists. What you focus on, grows.",
+  "The mind is a tool. You decide what it cuts.",
+  "Depth is built in silence.",
+  "One hour of deep work outperforms eight of shallow noise.",
+  "You are here because you chose to be. Choose again.",
+  "The work is the meditation.",
+];
+const params = new URLSearchParams(window.location.search);
+const site = params.get('site') || 'this site';
+document.getElementById('site-name').textContent = site;
+document.getElementById('rand-quote').textContent = '\u201c' + quotes[Math.floor(Math.random()*quotes.length)] + '\u201d';
+</script>
+</body>
+</html>
