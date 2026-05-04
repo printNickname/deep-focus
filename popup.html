@@ -147,9 +147,12 @@
     text-align: center; line-height: 1.4; font-family: inherit;
   }
   .preset-btn:hover { background: var(--bg3); color: var(--text); }
-  .preset-btn.added { border-left: 2px solid var(--green); color: var(--green); }
-  .preset-btn.nuclear { color: var(--text3); }
-  .preset-btn.nuclear:hover { color: var(--red); background: var(--bg3); }
+  @keyframes btn-confirm {
+    0%   { background: var(--bg2); color: var(--text2); }
+    25%  { background: var(--text); color: var(--bg); transform: scale(0.96); }
+    100% { background: var(--bg2); color: var(--text2); transform: scale(1); }
+  }
+  .preset-btn.added { animation: btn-confirm 0.4s ease-out forwards; pointer-events: none; }
 
 </style>
 </head>
