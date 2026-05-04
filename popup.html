@@ -38,7 +38,6 @@
     display: flex; align-items: center; justify-content: center;
   }
   .logo-text { font-size: 14px; font-weight: 600; letter-spacing: -0.3px; color: var(--text); }
-  .tagline { font-size: 10px; color: var(--text3); margin-left: 34px; letter-spacing: 0.1px; }
 
   /* ── Toggle ── */
   .toggle-wrap { display: flex; align-items: center; gap: 6px; }
@@ -74,9 +73,8 @@
     font-size: 44px; font-weight: 700;
     font-variant-numeric: tabular-nums;
     letter-spacing: -2px; line-height: 1;
-    color: var(--text); margin-bottom: 6px;
+    color: var(--text); margin-bottom: 14px;
   }
-  .timer-msg { font-size: 12px; color: var(--text2); margin-bottom: 14px; min-height: 16px; line-height: 1.4; }
   .dur-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 10px; }
   .dur-btn {
     background: var(--bg2); border: none; border-radius: 8px;
@@ -153,12 +151,6 @@
   .preset-btn.nuclear { color: var(--text3); }
   .preset-btn.nuclear:hover { color: var(--red); background: var(--bg3); }
 
-  /* ── Status bar ── */
-  .status-bar { padding: 10px 16px; display: flex; align-items: center; gap: 7px; }
-  .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text4); flex-shrink: 0; }
-  .dot.on { background: var(--green); }
-  .status-msg { font-size: 11px; color: var(--text4); line-height: 1.4; }
-  .status-msg.on { color: var(--text2); }
 </style>
 </head>
 <body>
@@ -179,13 +171,11 @@
       <div class="toggle" id="tog"></div>
     </div>
   </div>
-  <div class="tagline" id="htagline">Attention is the only currency that matters.</div>
 </div>
 
 <div class="timer-section">
   <div class="sec-label">focus session</div>
   <div class="timer-num" id="tnum">25:00</div>
-  <div class="timer-msg" id="tmsg">Set a duration. Disappear. Return with something built.</div>
   <div class="dur-grid">
     <button class="dur-btn" data-min="15">15 min</button>
     <button class="dur-btn sel" data-min="25">25 min</button>
@@ -213,23 +203,12 @@
 </div>
 
 <div class="presets-section">
-  <div class="sec-label" style="margin-bottom:10px">quick presets</div>
+  <div class="sec-label" style="margin-bottom:10px">quick add</div>
   <div class="preset-grid">
-    <button class="preset-btn" data-sites="twitter.com,x.com,instagram.com,facebook.com,threads.net,bluesky.app">Social</button>
-    <button class="preset-btn" data-sites="youtube.com,netflix.com,twitch.tv,disneyplus.com,primevideo.com,hulu.com">Streaming</button>
-    <button class="preset-btn" data-sites="reddit.com,9gag.com,quora.com,lemmy.world">Forums</button>
-    <button class="preset-btn" data-sites="tiktok.com,snapchat.com,pinterest.com">Short Video</button>
-    <button class="preset-btn" data-sites="amazon.com,ebay.com,aliexpress.com,etsy.com,temu.com">Shopping</button>
-    <button class="preset-btn" data-sites="chess.com,lichess.org,steampowered.com,epicgames.com,miniclip.com">Gaming</button>
-    <button class="preset-btn" data-sites="open.spotify.com,soundcloud.com,deezer.com">Music</button>
-    <button class="preset-btn" data-sites="nytimes.com,bbc.com,cnn.com,theguardian.com,bloomberg.com,techcrunch.com">News</button>
-    <button class="preset-btn nuclear" data-sites="twitter.com,x.com,instagram.com,facebook.com,tiktok.com,snapchat.com,reddit.com,youtube.com,netflix.com,twitch.tv,amazon.com,9gag.com,pinterest.com,chess.com,nytimes.com,bbc.com,cnn.com,linkedin.com,threads.net">Nuclear</button>
+    <button class="preset-btn" data-sites="twitter.com,x.com">Twitter</button>
+    <button class="preset-btn" data-sites="youtube.com">YouTube</button>
+    <button class="preset-btn" data-sites="linkedin.com">LinkedIn</button>
   </div>
-</div>
-
-<div class="status-bar">
-  <div class="dot" id="sdot"></div>
-  <span class="status-msg" id="smsg">Idle. Nothing is blocked. Nothing is protected.</span>
 </div>
 
 <script src="popup.js"></script>

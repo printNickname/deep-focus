@@ -23,10 +23,12 @@
         chrome.storage.local.get(['kairosAttempts'], function(r) {
           const attempts = r.kairosAttempts || {};
           attempts[today] = (attempts[today] || 0) + 1;
+          const count = attempts[today];
           chrome.storage.local.set({ kairosAttempts: attempts }, function() {
             window.location.replace(
               chrome.runtime.getURL('blocked.html') +
-              '?site=' + encodeURIComponent(hostname)
+              '?site=' + encodeURIComponent(hostname) +
+              '&count=' + count
             );
           });
         });
