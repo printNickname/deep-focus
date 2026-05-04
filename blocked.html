@@ -29,11 +29,16 @@
   .site-label { font-size: 11px; color: var(--text3); margin-bottom: 10px; letter-spacing: 0.3px; }
   .title { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 10px; }
   .subtitle { font-size: 14px; color: var(--text2); text-align: center; line-height: 1.6; max-width: 280px; margin-bottom: 32px; }
-  .quote { font-size: 13px; color: var(--text3); max-width: 260px; text-align: center; line-height: 1.7; font-style: italic; margin-bottom: 36px; }
+  .quote { font-size: 13px; color: var(--text3); max-width: 260px; text-align: center; line-height: 1.7; font-style: italic; margin-bottom: 40px; }
 
   /* ── Stats ── */
-  .stats { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 36px; }
-  .stats-today { font-size: 11px; color: var(--text3); }
+  .stats {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    margin-bottom: 40px;
+    background: var(--bg2); border-radius: 14px;
+    padding: 16px 20px; min-width: 260px;
+  }
+  .stats-today { font-size: 12px; color: var(--text2); font-weight: 500; align-self: flex-start; }
   .stats-chart { line-height: 0; }
 
   .back {
@@ -117,8 +122,8 @@ chrome.storage.local.get(['kairosAttempts'], function(res) {
     const x = i * (bW + gap);
     const y = maxH - h;
     const isToday = date === today;
-    const fill  = isToday ? '#98989e' : '#2c2c2e';
-    const tFill = isToday ? '#636366' : '#3a3a3c';
+    const fill  = isToday ? '#f2f2f2' : '#2c2c2e';
+    const tFill = isToday ? '#98989e' : '#3a3a3c';
     const d = new Date(date + 'T12:00:00');
     svg += '<rect x="' + x + '" y="' + y + '" width="' + bW + '" height="' + h + '" rx="3" fill="' + fill + '"/>';
     svg += '<text x="' + (x + bW/2) + '" y="' + (maxH+11) + '" text-anchor="middle" fill="' + tFill + '" font-size="9" font-family="-apple-system,sans-serif">' + DAY[d.getDay()] + '</text>';

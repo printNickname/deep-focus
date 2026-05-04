@@ -36,26 +36,27 @@ let state = {
 };
 let tickTimeout = null;
 
-// ── Toggle cooldown ───────────────────────────────────────────────────────────
-let toggleLocked = true;
-let cooldownSec = 5;
+// ── Toggle cooldown (fires only when turning OFF) ─────────────────────────────
+let toggleLocked = false;
 let cooldownInterval = null;
 
-function startCooldown() {
+function startOffCooldown(onComplete) {
   const lbl = document.getElementById('tlbl');
   const tog = document.getElementById('tog');
+  toggleLocked = true;
   tog.classList.add('locked');
-  lbl.textContent = cooldownSec + 's';
+  let remaining = 10;
+  lbl.textContent = remaining + 's';
 
   cooldownInterval = setInterval(() => {
-    cooldownSec--;
-    if (cooldownSec <= 0) {
+    remaining--;
+    if (remaining <= 0) {
       clearInterval(cooldownInterval);
       toggleLocked = false;
       tog.classList.remove('locked');
-      updateUI(); // restore correct label
+      onComplete();
     } else {
-      lbl.textContent = cooldownSec + 's';
+      lbl.textContent = remaining + 's';
     }
   }, 1000);
 }
@@ -250,8 +251,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (res.fbState) Object.assign(state, res.fbState);
     updateUI();
     renderSites();
-    renderStats();
-    startCooldown(); // start 5-second toggle lockout
 
     if (state.timerRunning) {
       document.getElementById('startbtn').textContent = 'Pause';
@@ -280,8 +279,17 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('tog').onclick = () => {
     if (toggleLocked) return;
     if (state.timerRunning) { pauseTimer(); return; }
-    state.active = !state.active;
-    save(); notifyBg(); updateUI();
+    if (state.active) {
+      // Turning OFF: friction countdown, then disable
+      startOffCooldown(() => {
+        state.active = false;
+        save(); notifyBg(); updateUI();
+      });
+    } else {
+      // Turning ON: immediate
+      state.active = true;
+      save(); notifyBg(); updateUI();
+    }
   };
 
   document.getElementById('startbtn').onclick = () => {
