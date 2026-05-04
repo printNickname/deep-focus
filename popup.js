@@ -36,6 +36,31 @@ let state = {
 };
 let tickTimeout = null;
 
+// ── Toggle cooldown ───────────────────────────────────────────────────────────
+let toggleLocked = true;
+let cooldownSec = 5;
+let cooldownInterval = null;
+
+function startCooldown() {
+  const lbl = document.getElementById('tlbl');
+  const tog = document.getElementById('tog');
+  tog.classList.add('locked');
+  lbl.textContent = cooldownSec + 's';
+
+  cooldownInterval = setInterval(() => {
+    cooldownSec--;
+    if (cooldownSec <= 0) {
+      clearInterval(cooldownInterval);
+      toggleLocked = false;
+      tog.classList.remove('locked');
+      updateUI(); // restore correct label
+    } else {
+      lbl.textContent = cooldownSec + 's';
+    }
+  }, 1000);
+}
+
+// ── Core ─────────────────────────────────────────────────────────────────────
 function fmt(sec) {
   return String(Math.floor(sec/60)).padStart(2,'0') + ':' + String(sec%60).padStart(2,'0');
 }
@@ -52,7 +77,7 @@ function save() {
 
 function notifyBg() {
   chrome.runtime.sendMessage({ type: "BLOCK_OPEN_TABS", sites: state.blockedSites }, () => {
-    void chrome.runtime.lastError; // suppress "receiving end does not exist" in MV3
+    void chrome.runtime.lastError;
   });
 }
 
@@ -63,10 +88,13 @@ function updateUI() {
 
   const tog = document.getElementById('tog');
   tog.classList.toggle('on', state.active);
-  document.getElementById('tlbl').textContent = state.active ? 'active' : 'idle';
 
-  const sdot = document.getElementById('sdot');
-  sdot.classList.toggle('on', state.active);
+  // Only update label when cooldown is done
+  if (!toggleLocked) {
+    document.getElementById('tlbl').textContent = state.active ? 'active' : 'idle';
+  }
+
+  document.getElementById('sdot').classList.toggle('on', state.active);
 
   const smsg = document.getElementById('smsg');
   if (state.active && state.timerRunning) {
@@ -83,7 +111,7 @@ function updateUI() {
 
 function renderSites() {
   const list = document.getElementById('slist');
-  const cnt = document.getElementById('scnt');
+  const cnt  = document.getElementById('scnt');
   cnt.textContent = state.blockedSites.length + (state.blockedSites.length === 1 ? ' site' : ' sites');
 
   if (state.blockedSites.length === 0) {
@@ -98,25 +126,76 @@ function renderSites() {
     list.appendChild(el);
   });
   list.querySelectorAll('.site-x').forEach(btn => {
-    btn.onclick = () => {
-      state.blockedSites.splice(+btn.dataset.i, 1);
-      renderSites(); save();
-    };
+    btn.onclick = () => { state.blockedSites.splice(+btn.dataset.i, 1); renderSites(); save(); };
   });
 }
 
+// ── Stats ─────────────────────────────────────────────────────────────────────
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function last7Days() {
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(d.toISOString().slice(0, 10));
+  }
+  return days;
+}
+
+function renderStats() {
+  chrome.storage.local.get(['kairosAttempts'], res => {
+    const attempts = res.kairosAttempts || {};
+    const today = todayKey();
+    const todayCount = attempts[today] || 0;
+
+    const label = document.getElementById('statsToday');
+    if (todayCount === 0) {
+      label.textContent = 'No blocked attempts today';
+    } else {
+      label.textContent = `${todayCount} blocked attempt${todayCount === 1 ? '' : 's'} today`;
+    }
+
+    const days = last7Days();
+    const counts = days.map(d => attempts[d] || 0);
+    const max = Math.max(...counts, 1);
+    const DAY = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+    const bW = 28, gap = 5, maxH = 32, totalW = 7*bW + 6*gap;
+    let svg = `<svg width="${totalW}" height="${maxH+14}" viewBox="0 0 ${totalW} ${maxH+14}">`;
+
+    days.forEach((date, i) => {
+      const c = counts[i];
+      const h = c > 0 ? Math.max(3, Math.round((c / max) * maxH)) : 2;
+      const x = i * (bW + gap);
+      const y = maxH - h;
+      const isToday = date === today;
+      const fill  = isToday ? '#f2f2f2' : '#2c2c2e';
+      const tFill = isToday ? '#636366' : '#3a3a3c';
+      const d = new Date(date + 'T12:00:00');
+
+      svg += `<rect x="${x}" y="${y}" width="${bW}" height="${h}" rx="3" fill="${fill}"/>`;
+      svg += `<text x="${x + bW/2}" y="${maxH+11}" text-anchor="middle" fill="${tFill}" font-size="8" font-family="-apple-system,sans-serif">${DAY[d.getDay()]}</text>`;
+    });
+
+    svg += '</svg>';
+    document.getElementById('statsChart').innerHTML = svg;
+  });
+}
+
+// ── Site management ───────────────────────────────────────────────────────────
 function addSite() {
   const inp = document.getElementById('sinp');
   let v = inp.value.trim().toLowerCase()
     .replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0];
   if (!v) return;
-  if (!state.blockedSites.includes(v)) {
-    state.blockedSites.push(v);
-    renderSites(); save();
-  }
+  if (!state.blockedSites.includes(v)) { state.blockedSites.push(v); renderSites(); save(); }
   inp.value = '';
 }
 
+// ── Timer ─────────────────────────────────────────────────────────────────────
 function startTimer() {
   if (state.timerRunning) return;
   state.timerRunning = true;
@@ -131,9 +210,7 @@ function startTimer() {
     if (!state.timerRunning) return;
     state.timeLeft--;
     if (state.timeLeft <= 0) {
-      state.timeLeft = 0;
-      state.timerRunning = false;
-      state.active = false;
+      state.timeLeft = 0; state.timerRunning = false; state.active = false;
       document.getElementById('startbtn').textContent = 'Begin again';
       document.getElementById('startbtn').className = 'btn primary';
       document.getElementById('tmsg').textContent = pick(MESSAGES.done);
@@ -155,8 +232,7 @@ function pauseTimer() {
 }
 
 function resetTimer() {
-  state.timerRunning = false;
-  state.active = false;
+  state.timerRunning = false; state.active = false;
   clearTimeout(tickTimeout);
   state.timeLeft = state.duration * 60;
   document.getElementById('startbtn').textContent = 'Begin';
@@ -166,6 +242,7 @@ function resetTimer() {
   save(); notifyBg(); updateUI();
 }
 
+// ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('htagline').textContent = pick(MESSAGES.taglines);
 
@@ -173,6 +250,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (res.fbState) Object.assign(state, res.fbState);
     updateUI();
     renderSites();
+    renderStats();
+    startCooldown(); // start 5-second toggle lockout
 
     if (state.timerRunning) {
       document.getElementById('startbtn').textContent = 'Pause';
@@ -199,6 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('tog').onclick = () => {
+    if (toggleLocked) return;
     if (state.timerRunning) { pauseTimer(); return; }
     state.active = !state.active;
     save(); notifyBg(); updateUI();

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Deep Focus",
-  "version": "2.1",
+  "name": "Kairos",
+  "version": "3.0",
   "description": "Block distracting sites during focus sessions",
   "permissions": [
     "storage",
