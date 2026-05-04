@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Kairos",
+  "name": "Kairos - Focus App",
   "version": "3.0",
   "description": "Block distracting sites during focus sessions",
   "permissions": [
