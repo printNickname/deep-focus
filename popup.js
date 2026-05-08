@@ -75,16 +75,19 @@ function renderSites() {
     list.innerHTML = '<div class="empty-msg">No sites added.<br>Use presets or add manually.</div>';
     return;
   }
+  const locked = state.active || state.timerRunning;
   list.innerHTML = '';
   state.blockedSites.forEach((site, i) => {
     const el = document.createElement('div');
     el.className = 'site-item';
-    el.innerHTML = `<span>${site}</span><button class="site-x" data-i="${i}">×</button>`;
+    el.innerHTML = `<span>${site}</span><button class="site-x" data-i="${i}" ${locked ? 'disabled' : ''}>×</button>`;
     list.appendChild(el);
   });
-  list.querySelectorAll('.site-x').forEach(btn => {
-    btn.onclick = () => { state.blockedSites.splice(+btn.dataset.i, 1); renderSites(); save(); };
-  });
+  if (!locked) {
+    list.querySelectorAll('.site-x').forEach(btn => {
+      btn.onclick = () => { state.blockedSites.splice(+btn.dataset.i, 1); renderSites(); save(); };
+    });
+  }
 }
 
 // ── Site management ───────────────────────────────────────────────────────────
@@ -148,6 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderSites();
 
     if (state.timerRunning) {
+      // Resume existing session
       document.getElementById('startbtn').textContent = 'Pause';
       document.getElementById('startbtn').className = 'btn';
       document.getElementById('resetbtn').style.display = '';
@@ -164,6 +168,9 @@ document.addEventListener('DOMContentLoaded', () => {
         tickTimeout = setTimeout(tick, 1000);
       }
       tickTimeout = setTimeout(tick, 1000);
+    } else if (!state.active) {
+      // Auto-start fresh session on popup open
+      startTimer();
     }
   });
 
