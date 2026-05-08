@@ -1,11 +1,4 @@
-// Background: closes/redirects already-open tabs when focus mode activates
-
-chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.type === 'BLOCK_OPEN_TABS') {
-    blockOpenTabs(msg.sites);
-  }
-});
-
+// ── Tab blocking ──────────────────────────────────────────────────────────────
 function blockOpenTabs(sites) {
   if (!sites || sites.length === 0) return;
   chrome.tabs.query({}, (tabs) => {
@@ -27,10 +20,64 @@ function blockOpenTabs(sites) {
   });
 }
 
+// ── Timer expiry (alarm fires even when popup is closed) ──────────────────────
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name !== 'kairos-timer') return;
+  chrome.storage.local.get(['fbState'], res => {
+    const s = res.fbState || {};
+    if (!s.timerRunning) return;
+    chrome.storage.local.set({
+      fbState: {
+        ...s,
+        timerRunning: false,
+        active: false,
+        timeLeft: 0,
+        endTime: null,
+      }
+    }, () => {
+      blockOpenTabs([]); // unblock all
+    });
+  });
+});
+
+// ── Messages from popup ───────────────────────────────────────────────────────
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === 'BLOCK_OPEN_TABS') {
+    blockOpenTabs(msg.sites);
+  }
+  if (msg.type === 'TIMER_START') {
+    // Set alarm for when timer should expire
+    chrome.alarms.clear('kairos-timer', () => {
+      chrome.alarms.create('kairos-timer', {
+        when: Date.now() + msg.timeLeft * 1000
+      });
+    });
+  }
+  if (msg.type === 'TIMER_CLEAR') {
+    chrome.alarms.clear('kairos-timer');
+  }
+});
+
+// ── On browser startup: restore blocking state ────────────────────────────────
 chrome.runtime.onStartup.addListener(() => {
   chrome.storage.local.get(['fbState'], res => {
-    if (res.fbState && res.fbState.active && res.fbState.blockedSites) {
-      blockOpenTabs(res.fbState.blockedSites);
+    const s = res.fbState;
+    if (!s) return;
+
+    if (s.timerRunning && s.endTime) {
+      const remaining = s.endTime - Date.now();
+      if (remaining <= 0) {
+        // Timer already expired while browser was closed
+        chrome.storage.local.set({
+          fbState: { ...s, timerRunning: false, active: false, timeLeft: 0, endTime: null }
+        });
+      } else {
+        // Re-arm the alarm
+        chrome.alarms.create('kairos-timer', { when: s.endTime });
+        if (s.active && s.blockedSites) blockOpenTabs(s.blockedSites);
+      }
+    } else if (s.active && s.blockedSites) {
+      blockOpenTabs(s.blockedSites);
     }
   });
 });

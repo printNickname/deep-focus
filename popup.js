@@ -4,8 +4,9 @@ let state = {
   duration: 25,
   timeLeft: 25 * 60,
   timerRunning: false,
+  endTime: null,
 };
-let tickTimeout = null;
+let displayInterval = null;
 
 // ── Toggle cooldown (fires only when turning OFF) ─────────────────────────────
 let toggleLocked = false;
@@ -32,35 +33,32 @@ function startOffCooldown(onComplete) {
   }, 1000);
 }
 
-// ── Core ─────────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function fmt(sec) {
-  return String(Math.floor(sec/60)).padStart(2,'0') + ':' + String(sec%60).padStart(2,'0');
+  sec = Math.max(0, Math.round(sec));
+  return String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0');
 }
 
-function save() {
-  chrome.storage.local.set({ fbState: {
-    active: state.active,
-    blockedSites: state.blockedSites,
-    duration: state.duration,
-    timeLeft: state.timeLeft,
-    timerRunning: state.timerRunning,
-  }});
+// Current remaining seconds (reads from endTime if running, else stored timeLeft)
+function getTimeLeft() {
+  if (state.timerRunning && state.endTime) {
+    return Math.max(0, (state.endTime - Date.now()) / 1000);
+  }
+  return state.timeLeft;
 }
 
-function notifyBg() {
-  chrome.runtime.sendMessage({ type: "BLOCK_OPEN_TABS", sites: state.blockedSites }, () => {
-    void chrome.runtime.lastError;
-  });
+function save(extra) {
+  chrome.storage.local.set({ fbState: { ...state, ...extra } });
+}
+
+function notifyBg(type, extra) {
+  chrome.runtime.sendMessage({ type, ...extra }, () => { void chrome.runtime.lastError; });
 }
 
 function updateUI() {
-  const tnum = document.getElementById('tnum');
-  tnum.textContent = fmt(state.timeLeft);
-  tnum.classList.toggle('running', state.timerRunning);
-
-  const tog = document.getElementById('tog');
-  tog.classList.toggle('on', state.active);
-
+  document.getElementById('tnum').textContent = fmt(getTimeLeft());
+  document.getElementById('tnum').classList.toggle('running', state.timerRunning);
+  document.getElementById('tog').classList.toggle('on', state.active);
   if (!toggleLocked) {
     document.getElementById('tlbl').textContent = state.active ? 'active' : 'idle';
   }
@@ -85,91 +83,138 @@ function renderSites() {
   });
   if (!locked) {
     list.querySelectorAll('.site-x').forEach(btn => {
-      btn.onclick = () => { state.blockedSites.splice(+btn.dataset.i, 1); renderSites(); save(); };
+      btn.onclick = () => {
+        state.blockedSites.splice(+btn.dataset.i, 1);
+        renderSites(); save();
+      };
     });
   }
 }
 
-// ── Site management ───────────────────────────────────────────────────────────
 function addSite() {
   const inp = document.getElementById('sinp');
   let v = inp.value.trim().toLowerCase()
-    .replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0];
+    .replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
   if (!v) return;
   if (!state.blockedSites.includes(v)) { state.blockedSites.push(v); renderSites(); save(); }
   inp.value = '';
 }
 
-// ── Timer ─────────────────────────────────────────────────────────────────────
+// ── Timer control ─────────────────────────────────────────────────────────────
 function startTimer() {
   if (state.timerRunning) return;
+  const tl = state.timeLeft > 0 ? state.timeLeft : state.duration * 60;
+  const endTime = Date.now() + tl * 1000;
+
   state.timerRunning = true;
   state.active = true;
+  state.endTime = endTime;
+  state.timeLeft = tl;
+
   document.getElementById('startbtn').textContent = 'Pause';
   document.getElementById('startbtn').className = 'btn';
   document.getElementById('resetbtn').style.display = '';
-  save(); notifyBg(); updateUI();
 
-  function tick() {
-    if (!state.timerRunning) return;
-    state.timeLeft--;
-    if (state.timeLeft <= 0) {
-      state.timeLeft = 0; state.timerRunning = false; state.active = false;
-      document.getElementById('startbtn').textContent = 'Begin again';
-      document.getElementById('startbtn').className = 'btn primary';
-      save(); notifyBg(); updateUI(); return;
-    }
-    updateUI(); save();
-    tickTimeout = setTimeout(tick, 1000);
-  }
-  tickTimeout = setTimeout(tick, 1000);
+  save();
+  notifyBg('BLOCK_OPEN_TABS', { sites: state.blockedSites });
+  notifyBg('TIMER_START', { timeLeft: tl });
+
+  startDisplayTick();
+  updateUI();
+  renderSites();
 }
 
 function pauseTimer() {
+  state.timeLeft = Math.round(getTimeLeft());
   state.timerRunning = false;
-  clearTimeout(tickTimeout);
+  state.endTime = null;
+
+  clearInterval(displayInterval);
+  notifyBg('TIMER_CLEAR', {});
+
   document.getElementById('startbtn').textContent = 'Resume';
   document.getElementById('startbtn').className = 'btn primary';
-  save(); updateUI();
+
+  save();
+  updateUI();
+  renderSites();
 }
 
 function resetTimer() {
-  state.timerRunning = false; state.active = false;
-  clearTimeout(tickTimeout);
+  clearInterval(displayInterval);
+  notifyBg('TIMER_CLEAR', {});
+
+  state.timerRunning = false;
+  state.active = false;
+  state.endTime = null;
   state.timeLeft = state.duration * 60;
+
   document.getElementById('startbtn').textContent = 'Begin';
   document.getElementById('startbtn').className = 'btn primary';
   document.getElementById('resetbtn').style.display = 'none';
-  save(); notifyBg(); updateUI();
+
+  save();
+  notifyBg('BLOCK_OPEN_TABS', { sites: [] });
+  updateUI();
+  renderSites();
+}
+
+function startDisplayTick() {
+  clearInterval(displayInterval);
+  displayInterval = setInterval(() => {
+    const remaining = getTimeLeft();
+    document.getElementById('tnum').textContent = fmt(remaining);
+    if (remaining <= 0) {
+      clearInterval(displayInterval);
+      // Background alarm handles the actual state change; sync from storage
+      chrome.storage.local.get(['fbState'], res => {
+        if (res.fbState) Object.assign(state, res.fbState);
+        document.getElementById('startbtn').textContent = 'Begin again';
+        document.getElementById('startbtn').className = 'btn primary';
+        document.getElementById('resetbtn').style.display = 'none';
+        updateUI();
+        renderSites();
+      });
+    }
+  }, 500);
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   chrome.storage.local.get(['fbState'], res => {
     if (res.fbState) Object.assign(state, res.fbState);
+
+    // Recalculate timeLeft from endTime in case popup was closed
+    if (state.timerRunning && state.endTime) {
+      const remaining = (state.endTime - Date.now()) / 1000;
+      if (remaining <= 0) {
+        // Already expired
+        state.timerRunning = false;
+        state.active = false;
+        state.timeLeft = 0;
+        state.endTime = null;
+        save();
+      }
+    }
+
     updateUI();
     renderSites();
 
     if (state.timerRunning) {
-      // Resume existing session
       document.getElementById('startbtn').textContent = 'Pause';
       document.getElementById('startbtn').className = 'btn';
       document.getElementById('resetbtn').style.display = '';
-      function tick() {
-        if (!state.timerRunning) return;
-        state.timeLeft--;
-        if (state.timeLeft <= 0) {
-          state.timeLeft = 0; state.timerRunning = false; state.active = false;
-          document.getElementById('startbtn').textContent = 'Begin again';
-          document.getElementById('startbtn').className = 'btn primary';
-          save(); notifyBg(); updateUI(); return;
-        }
-        updateUI(); save();
-        tickTimeout = setTimeout(tick, 1000);
-      }
-      tickTimeout = setTimeout(tick, 1000);
-    } else if (!state.active) {
-      // Auto-start fresh session on popup open
+      startDisplayTick();
+    } else if (state.timeLeft <= 0) {
+      document.getElementById('startbtn').textContent = 'Begin again';
+      document.getElementById('startbtn').className = 'btn primary';
+    } else if (state.active) {
+      // Paused but active
+      document.getElementById('startbtn').textContent = 'Resume';
+      document.getElementById('startbtn').className = 'btn primary';
+      document.getElementById('resetbtn').style.display = '';
+    } else {
+      // No session — auto-start
       startTimer();
     }
   });
@@ -180,18 +225,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if (state.active) {
       startOffCooldown(() => {
         state.active = false;
-        save(); notifyBg(); updateUI();
+        save();
+        notifyBg('BLOCK_OPEN_TABS', { sites: [] });
+        updateUI();
       });
     } else {
       state.active = true;
-      save(); notifyBg(); updateUI();
+      save();
+      notifyBg('BLOCK_OPEN_TABS', { sites: state.blockedSites });
+      updateUI();
     }
   };
 
   document.getElementById('startbtn').onclick = () => {
     if (state.timerRunning) { pauseTimer(); }
     else {
-      if (state.timeLeft === 0) state.timeLeft = state.duration * 60;
+      if (state.timeLeft <= 0) state.timeLeft = state.duration * 60;
       startTimer();
     }
   };
@@ -221,7 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
       sites.forEach(s => { if (!state.blockedSites.includes(s)) { state.blockedSites.push(s); added++; } });
       if (added > 0) { renderSites(); save(); }
       btn.classList.add('added');
-      setTimeout(() => btn.classList.remove('added'), 1500);
+      setTimeout(() => btn.classList.remove('added'), 400);
     };
   });
 });
