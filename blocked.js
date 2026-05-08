@@ -54,31 +54,28 @@ function renderChart(attempts) {
     var fill  = isToday ? '#f2f2f2' : '#48484a';
     var tFill = isToday ? '#ebebf5' : '#636366';
     var d = new Date(date + 'T12:00:00');
-    svg += '<rect x="' + x + '" y="' + y + '" width="' + bW + '" height="' + h + '" rx="3" fill="' + fill + '" data-count="' + c + '" data-cx="' + (x + bW/2) + '" data-y="' + y + '" style="cursor:default"/>';
+    svg += '<rect x="' + x + '" y="' + y + '" width="' + bW + '" height="' + h + '" rx="3" fill="' + fill + '" data-count="' + c + '" data-day="' + DAY[new Date(date + 'T12:00:00').getDay()] + '" style="cursor:default"/>';
     svg += '<text x="' + (x + bW/2) + '" y="' + (maxH+11) + '" text-anchor="middle" fill="' + tFill + '" font-size="9" font-family="-apple-system,sans-serif">' + DAY[d.getDay()] + '</text>';
   });
 
   svg += '</svg>';
   var container = document.getElementById('stats-chart');
-  // Preserve tooltip element
-  var tip = document.getElementById('chart-tooltip');
   container.innerHTML = svg;
-  container.appendChild(tip);
 
-  // Hover tooltips
+  // Hover: update the label above instead of floating tooltip
+  var label = document.getElementById('stats-today');
+  var defaultText = label.textContent;
+
   container.querySelector('svg').addEventListener('mouseover', function(e) {
     var rect = e.target.closest('rect');
     if (!rect) return;
     var count = parseInt(rect.dataset.count, 10);
-    var cx = parseFloat(rect.dataset.cx);
-    var y = parseFloat(rect.dataset.y);
-    tip.textContent = count === 0 ? 'No attempts' : count === 1 ? '1 attempt' : count + ' attempts';
-    tip.style.left = cx + 'px';
-    tip.style.top = (y - 26) + 'px';
-    tip.style.display = 'block';
+    var day = rect.dataset.day;
+    var text = count === 0 ? 'No attempts' : count === 1 ? '1 attempt' : count + ' attempts';
+    label.textContent = day + ': ' + text;
   });
   container.querySelector('svg').addEventListener('mouseleave', function() {
-    tip.style.display = 'none';
+    label.textContent = defaultText;
   });
 }
 
