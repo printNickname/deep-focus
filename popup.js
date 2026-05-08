@@ -73,7 +73,7 @@ function renderSites() {
     list.innerHTML = '<div class="empty-msg">No sites added.<br>Use presets or add manually.</div>';
     return;
   }
-  const locked = state.active || state.timerRunning;
+  const locked = state.timerRunning;
   list.innerHTML = '';
   state.blockedSites.forEach((site, i) => {
     const el = document.createElement('div');
@@ -214,8 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('startbtn').className = 'btn primary';
       document.getElementById('resetbtn').style.display = '';
     } else {
-      // No session — auto-start
-      startTimer();
+      // Idle — wait for user to click Begin
     }
   });
 
