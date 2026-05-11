@@ -73,7 +73,7 @@ function renderSites() {
     list.innerHTML = '<div class="empty-msg">No sites added.<br>Use presets or add manually.</div>';
     return;
   }
-  const locked = state.timerRunning;
+  const locked = state.timerRunning || state.active;
   list.innerHTML = '';
   state.blockedSites.forEach((site, i) => {
     const el = document.createElement('div');
